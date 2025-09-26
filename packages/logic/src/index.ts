@@ -1,4 +1,3 @@
-// A simple function to get started
-export const getGreeting = (name: string): string => {
-  return `Hello, ${name}!`;
-};
+export * from './domain/auth';
+export * from './api/auth';
+export { apiClient } from './api-client';
