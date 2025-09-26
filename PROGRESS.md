@@ -5,7 +5,7 @@
 - [x] `Turborepo` 기본 구조 생성
 - [x] `web` (Next.js) 및 `mobile` (React Native) 프로젝트 생성
 - [x] 클린 아키텍처 디렉토리 구조 설정
-- [ ] 공유 패키지 `logic` 및 `ui` 초기 설정
+- [x] 공유 패키지 `logic` 및 `ui` 초기 설정
 
 ### 2단계: 사용자 인증 시스템
 
