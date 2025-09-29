@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@repo/ui/button';
 import { Card } from '@repo/ui/card';
 import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
 import { registerUser } from '@repo/logic/api/auth';
+import { useAuth } from '@repo/logic/context/auth-context';
 
 export default function SignupForm() {
   const [username, setUsername] = useState('');
@@ -13,6 +15,8 @@ export default function SignupForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,8 +24,8 @@ export default function SignupForm() {
     setLoading(true);
     try {
       const response = await registerUser({ username, email, password });
-      console.log('Signup successful:', response);
-      // TODO: Automatically log the user in or redirect to login page
+      login(response.token);
+      router.push('/');
     } catch (err) {
       setError('Failed to sign up. Please try again.');
       console.error(err);
