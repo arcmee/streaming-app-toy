@@ -10,4 +10,19 @@ export const apiClient = axios.create({
   },
 });
 
-// You can add interceptors for handling auth tokens here later
+// Add a request interceptor to include the token in headers
+apiClient.interceptors.request.use(
+  (config) => {
+    // Check if window is defined (to ensure it runs only on the client-side)
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);

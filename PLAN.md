@@ -35,6 +35,7 @@
 1.  `packages/logic`에 `streaming-server`의 사용자 API(`register`, `login`)를 호출하는 클라이언트 로직 구현.
 2.  `presentation` 계층에 회원가입 및 로그인 페이지/화면 구현.
 3.  JWT 토큰 저장 및 인증이 필요한 API 요청 처리 로직 구현 (예: Axios 인터셉터).
+4.  **보안 강화**: 현재 `localStorage`에 저장된 JWT 토큰을 더 안전한 방식(예: HTTP-only 쿠키)으로 전환하여 XSS 공격에 대한 방어 강화.
 
 ### 3단계: 핵심 스트리밍 기능
 1.  실시간 방송 목록을 보여주는 메인 페이지/화면 구현 (`GET /api/streams`).
