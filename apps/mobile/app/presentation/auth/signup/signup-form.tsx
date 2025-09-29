@@ -5,21 +5,35 @@ import { Button } from '@repo/ui/button';
 import { Card } from '@repo/ui/card';
 import { Input } from '@repo/ui/input';
 import { Label } from '@repo/ui/label';
+import { registerUser } from '@repo/logic/api/auth';
 
 export default function SignupForm() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement signup logic
-    console.log({ username, email, password });
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await registerUser({ username, email, password });
+      console.log('Signup successful:', response);
+      // TODO: Automatically log the user in or redirect to login page
+    } catch (err) {
+      setError('Failed to sign up. Please try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Card title="Sign Up">
       <form onSubmit={handleSubmit}>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
         <div>
           <Label htmlFor="username">Username</Label>
           <Input
@@ -28,6 +42,7 @@ export default function SignupForm() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
         <div>
@@ -38,6 +53,7 @@ export default function SignupForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
         <div>
@@ -48,10 +64,11 @@ export default function SignupForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={loading}
           />
         </div>
-        <Button type="submit">
-          Sign Up
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Signing up...' : 'Sign Up'}
         </Button>
       </form>
     </Card>
