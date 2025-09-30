@@ -41,7 +41,7 @@ export default function Home() {
           <div className={styles.grid}>
             {streams.length > 0 ? (
               streams.map((stream) => (
-                <Link key={stream.id} href={`/streams/${stream.id}`} style={{ textDecoration: 'none' }}>
+                <Link key={stream.id} href={`/channel/${stream.userId}`} style={{ textDecoration: 'none' }}>
                   <Card title={stream.title}>
                     {stream.thumbnailUrl && (
                       <img 
