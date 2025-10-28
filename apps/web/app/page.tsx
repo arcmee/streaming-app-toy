@@ -31,38 +31,36 @@ export default function Home() {
   }, []);
 
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <h1 style={{ marginBottom: '2rem' }}>Live Streams</h1>
-        
-        {loading && <p>Loading streams...</p>}
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        
-        {!loading && !error && (
-          <div className={styles.grid}>
-            {streams.length > 0 ? (
-              streams.map((stream) => (
-                <Link key={stream.id} href={`/channel/${stream.userId}`} style={{ textDecoration: 'none' }}>
-                  <Card title={stream.title}>
-                    <Image 
-                      src={stream.thumbnailUrl || 'https://placehold.co/320x180'} 
-                      alt={stream.title} 
-                      width={320}
-                      height={180}
-                      style={{ width: '100%', height: 'auto', objectFit: 'cover' }} 
-                    />
-                    <p>{stream.description}</p>
-                    {/* In a real app, you'd fetch the user's name from the userId */}
-                    <p>Streamer ID: {stream.userId}</p>
-                  </Card>
-                </Link>
-              ))
-            ) : (
-              <p>No live streams right now. Check back later!</p>
-            )}
-          </div>
-        )}
-      </main>
-    </div>
+    <>
+      <h1 style={{ marginBottom: '2rem' }}>Live Streams</h1>
+      
+      {loading && <p>Loading streams...</p>}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      
+      {!loading && !error && (
+        <div className={styles.grid}>
+          {streams.length > 0 ? (
+            streams.map((stream) => (
+              <Link key={stream.id} href={`/channel/${stream.userId}`} style={{ textDecoration: 'none' }}>
+                <Card title={stream.title}>
+                  <Image 
+                    src={stream.thumbnailUrl || 'https://placehold.co/320x180'} 
+                    alt={stream.title} 
+                    width={320}
+                    height={180}
+                    style={{ width: '100%', height: 'auto', objectFit: 'cover' }} 
+                  />
+                  <p>{stream.description}</p>
+                  {/* In a real app, you'd fetch the user's name from the userId */}
+                  <p>Streamer ID: {stream.userId}</p>
+                </Card>
+              </Link>
+            ))
+          ) : (
+            <p>No live streams right now. Check back later!</p>
+          )}
+        </div>
+      )}
+    </>
   );
 }

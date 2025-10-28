@@ -58,11 +58,11 @@ export default function VodPage({ params }: { params: { vodId: string } }) {
   }
 
   if (!vod) {
-    return <div style={styles.page}><p>VOD not found.</p></div>;
+    return <p>VOD not found.</p>;
   }
 
   return (
-    <div style={styles.page}>
+    <>
       <header style={{ marginBottom: '2rem' }}>
         <h1>{vod.title}</h1>
       </header>
@@ -84,6 +84,6 @@ export default function VodPage({ params }: { params: { vodId: string } }) {
           <p>{vod.description}</p>
         </div>
       )}
-    </div>
+    </>
   );
 }
