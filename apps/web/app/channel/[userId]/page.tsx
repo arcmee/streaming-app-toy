@@ -153,6 +153,7 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
       <header style={{ marginBottom: '2rem' }}>
         <h1>{channel.stream.title}</h1>
         <h2>Streamed by: {channel.user.username}</h2>
+        <Link href={`/channel/${params.userId}/vods`}>View VODs</Link>
       </header>
 
       <div style={styles.layout}>
