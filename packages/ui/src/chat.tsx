@@ -13,7 +13,7 @@ export interface ChatProps {
 const chatStyles = {
   container: {
     display: 'flex',
-    flexDirection: 'column' as 'column',
+    flexDirection: 'column' as const,
     height: '100%',
     border: '1px solid #ccc',
     borderRadius: '8px',
@@ -23,14 +23,14 @@ const chatStyles = {
   messageList: {
     flexGrow: 1,
     padding: '1rem',
-    overflowY: 'auto' as 'auto',
+    overflowY: 'auto' as const,
     background: '#f9f9f9',
   },
   message: {
     marginBottom: '0.5rem',
   },
   messageUser: {
-    fontWeight: 'bold' as 'bold',
+    fontWeight: 'bold' as const,
     marginRight: '0.5rem',
   },
   form: {
