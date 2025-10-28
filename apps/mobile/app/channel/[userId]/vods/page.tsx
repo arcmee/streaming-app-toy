@@ -64,11 +64,11 @@ export default function VodsPage({ params }: { params: { userId: string } }) {
   }
 
   if (error) {
-    return <div style={styles.page}><p style={{ color: 'red' }}>{error}</p></div>;
+    return <p style={{ color: 'red' }}>{error}</p>;
   }
 
   return (
-    <div style={styles.page}>
+    <>
       <h1 style={styles.title}>VODs for User {params.userId}</h1>
       {vods.length > 0 ? (
         <ul style={styles.vodList}>
@@ -86,6 +86,6 @@ export default function VodsPage({ params }: { params: { userId: string } }) {
       ) : (
         <p>No VODs found for this user.</p>
       )}
-    </div>
+    </>
   );
 }

@@ -8,12 +8,9 @@ import { chatService } from '@repo/logic/api/chat';
 import { useAuth } from '@repo/logic/context/auth-context';
 import type { ChatMessage } from '@repo/logic/domain/chat';
 import { Chat } from '@repo/ui/chat';
+import Link from 'next/link';
 
 const styles = {
-  page: {
-    padding: '2rem',
-    fontFamily: 'sans-serif',
-  },
   layout: {
     display: 'flex',
     gap: '2rem',
@@ -143,18 +140,18 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
   }
 
   if (!channel) {
-    return <div style={styles.page}><p>Channel not found.</p></div>;
+    return <p>Channel not found.</p>;
   }
 
   const streamUrl = `${process.env.NEXT_PUBLIC_STREAMING_SERVER_URL}/live/${channel.stream.id}.flv`;
 
   return (
-    <div style={styles.page}>
-      <header style={{ marginBottom: '2rem' }}>
+    <>
+      <div style={{ marginBottom: '2rem' }}>
         <h1>{channel.stream.title}</h1>
         <h2>Streamed by: {channel.user.username}</h2>
         <Link href={`/channel/${params.userId}/vods`}>View VODs</Link>
-      </header>
+      </div>
 
       <div style={styles.layout}>
         <div style={styles.mainContent}>
@@ -183,6 +180,6 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
           />
         </aside>
       </div>
-    </div>
+    </>
   );
 }
