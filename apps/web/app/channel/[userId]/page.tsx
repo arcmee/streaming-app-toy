@@ -44,7 +44,7 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const { user: currentUser, isAuthenticated } = useAuth();
+  const { user: currentUser, isAuthenticated, token } = useAuth();
 
   // Dynamically load flv.js
   useEffect(() => {
@@ -80,29 +80,40 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
 
   // Manage chat connection
   useEffect(() => {
-    if (!channel?.stream.id) return;
+    // Connect only when we have a channel and the user is authenticated with a token.
+    if (!channel?.stream.id || !token) return;
 
-    chatService.connect();
-    chatService.joinRoom(channel.stream.id);
+    try {
+      chatService.connect(token);
+      chatService.joinRoom(channel.stream.id);
 
-    chatService.onNewMessage((message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
-    });
+      chatService.onNewMessage((message) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
+      });
 
-    chatService.onError((error) => {
-      console.error('Chat Error:', error.message);
-      // Optionally show an error to the user in the chat UI
-    });
+      chatService.onError((error) => {
+        console.error('Chat Error:', error.message);
+        // Optionally show an error to the user in the chat UI
+      });
+    } catch (error) {
+      console.error('Failed to connect to chat:', error);
+      // Handle connection error, maybe set an error state
+    }
 
     // Cleanup on component unmount
     return () => {
-      chatService.leaveRoom(channel.stream.id);
-      chatService.offNewMessage();
-      chatService.offError();
-      chatService.disconnect();
-      setMessages([]); // Clear messages on leave
+      try {
+        chatService.leaveRoom(channel.stream.id);
+        chatService.offNewMessage();
+        chatService.offError();
+        chatService.disconnect();
+        setMessages([]); // Clear messages on leave
+      } catch (error) {
+        // Handle potential errors on disconnect if socket wasn't initialized
+        console.error('Error during chat cleanup:', error);
+      }
     };
-  }, [channel]);
+  }, [channel, token]);
 
   const handleSendMessage = (text: string) => {
     if (!currentUser || !channel) return;
