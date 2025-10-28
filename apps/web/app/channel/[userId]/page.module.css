@@ -1,0 +1,40 @@
+.layout {
+  display: flex;
+  gap: 2rem;
+}
+
+.mainContent {
+  flex: 3;
+}
+
+.chatAside {
+  flex: 1;
+  height: calc(100vh - 12rem); /* Adjusted for header/footer */
+  min-width: 300px;
+}
+
+.playerWrapper {
+  position: relative;
+  padding-top: 56.25%; /* 16:9 aspect ratio */
+}
+
+.reactPlayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.info {
+  margin-top: 1rem;
+}
+
+@media (max-width: 992px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .chatAside {
+    height: 50vh; /* Adjust height for vertical layout */
+    min-width: unset;
+  }
+}

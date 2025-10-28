@@ -9,32 +9,7 @@ import { useAuth } from '@repo/logic/context/auth-context';
 import type { ChatMessage } from '@repo/logic/domain/chat';
 import { Chat } from '@repo/ui/chat';
 import Link from 'next/link';
-
-const styles = {
-  layout: {
-    display: 'flex',
-    gap: '2rem',
-  },
-  mainContent: {
-    flex: 3,
-  },
-  chatAside: {
-    flex: 1,
-    height: 'calc(100vh - 4rem)', // Adjust height as needed
-  },
-  playerWrapper: {
-    position: 'relative',
-    paddingTop: '56.25%', // 16:9 aspect ratio
-  },
-  reactPlayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  info: {
-    marginTop: '1rem',
-  },
-};
+import styles from './page.module.css';
 
 export default function ChannelPage({ params }: { params: { userId: string } }) {
   const [channel, setChannel] = useState<Channel | null>(null);
@@ -153,11 +128,11 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
         <Link href={`/channel/${params.userId}/vods`}>View VODs</Link>
       </div>
 
-      <div style={styles.layout}>
-        <div style={styles.mainContent}>
-          <div style={styles.playerWrapper}>
+      <div className={styles.layout}>
+        <div className={styles.mainContent}>
+          <div className={styles.playerWrapper}>
             <ReactPlayer
-              style={styles.reactPlayer}
+              className={styles.reactPlayer}
               url={streamUrl}
               playing={channel.stream.isLive}
               controls
@@ -165,14 +140,14 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
               height="100%"
             />
           </div>
-          <div style={styles.info}>
+          <div className={styles.info}>
             <h3>About this stream:</h3>
             <p>{channel.stream.description}</p>
             {!channel.stream.isLive && <p>This stream is not live right now.</p>}
           </div>
         </div>
 
-        <aside style={styles.chatAside}>
+        <aside className={styles.chatAside}>
           <Chat 
             messages={messages} 
             onSendMessage={handleSendMessage} 
