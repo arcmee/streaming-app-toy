@@ -3,6 +3,7 @@
 import * as React from 'react';
 
 import type { ChatMessage } from '@repo/logic/domain/chat';
+import { generateColorFromString } from './lib/color';
 
 export interface ChatProps {
   messages: ChatMessage[];
@@ -28,10 +29,21 @@ const chatStyles = {
   },
   message: {
     marginBottom: '0.5rem',
+    lineHeight: '1.4',
+  },
+  systemMessage: {
+    fontStyle: 'italic' as const,
+    color: '#888',
+    textAlign: 'center' as const,
   },
   messageUser: {
     fontWeight: 'bold' as const,
     marginRight: '0.5rem',
+  },
+  timestamp: {
+    fontSize: '0.75rem',
+    color: '#999',
+    marginLeft: '0.5rem',
   },
   form: {
     display: 'flex',
@@ -79,13 +91,37 @@ export function Chat({ messages, onSendMessage, disabled = false }: ChatProps) {
     }
   };
 
+  const formatTimestamp = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <div style={chatStyles.container}>
       <div style={chatStyles.messageList} ref={messageListRef}>
         {messages.map((msg) => (
-          <div key={msg.id} style={chatStyles.message}>
-            <span style={chatStyles.messageUser}>{msg.user.username}:</span>
-            <span>{msg.text}</span>
+          <div 
+            key={msg.id} 
+            style={msg.isSystem ? {...chatStyles.message, ...chatStyles.systemMessage} : chatStyles.message}
+          >
+            {msg.isSystem ? (
+              <span>{msg.text}</span>
+            ) : (
+              <>
+                <span 
+                  style={{ 
+                    ...chatStyles.messageUser, 
+                    color: generateColorFromString(msg.user.id)
+                  }}
+                >
+                  {msg.user.username}:
+                </span>
+                <span>{msg.text}</span>
+                <span style={chatStyles.timestamp}>
+                  {formatTimestamp(msg.createdAt)}
+                </span>
+              </>
+            )}
           </div>
         ))}
       </div>

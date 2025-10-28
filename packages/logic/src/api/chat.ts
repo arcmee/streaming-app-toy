@@ -75,4 +75,41 @@ export const chatService = {
   offError: () => {
     getSocket().off('error');
   },
+
+  onUserJoined: (callback: (message: ChatMessage) => void) => {
+    getSocket().on('userJoined', ({ userId, username }: { userId: string; username: string }) => {
+      callback({
+        id: `system-${userId}-${Date.now()}`,
+        text: `${username} has joined the chat.`,
+        createdAt: new Date().toISOString(),
+        isSystem: true,
+        // Fill other required fields as appropriate for a system message
+        streamId: '', // Or get it from context if available
+        userId,
+        user: { id: userId, username },
+      });
+    });
+  },
+
+  offUserJoined: () => {
+    getSocket().off('userJoined');
+  },
+
+  onUserLeft: (callback: (message: ChatMessage) => void) => {
+    getSocket().on('userLeft', ({ userId, username }: { userId: string; username: string }) => {
+      callback({
+        id: `system-${userId}-${Date.now()}`,
+        text: `${username} has left the chat.`,
+        createdAt: new Date().toISOString(),
+        isSystem: true,
+        streamId: '',
+        userId,
+        user: { id: userId, username },
+      });
+    });
+  },
+
+  offUserLeft: () => {
+    getSocket().off('userLeft');
+  },
 };

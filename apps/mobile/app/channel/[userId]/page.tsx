@@ -91,6 +91,14 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
         setMessages((prevMessages) => [...prevMessages, message]);
       });
 
+      chatService.onUserJoined((message) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
+      });
+
+      chatService.onUserLeft((message) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
+      });
+
       chatService.onError((error) => {
         console.error('Chat Error:', error.message);
         // Optionally show an error to the user in the chat UI
@@ -105,6 +113,8 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
       try {
         chatService.leaveRoom(channel.stream.id);
         chatService.offNewMessage();
+        chatService.offUserJoined();
+        chatService.offUserLeft();
         chatService.offError();
         chatService.disconnect();
         setMessages([]); // Clear messages on leave
