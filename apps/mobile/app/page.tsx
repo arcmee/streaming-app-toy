@@ -5,6 +5,7 @@ import { getStreams } from '@repo/logic/api/stream';
 import { Stream } from '@repo/logic/domain/stream';
 import { Card } from '@repo/ui/card';
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from './page.module.css';
 
 export default function Home() {
@@ -43,13 +44,13 @@ export default function Home() {
               streams.map((stream) => (
                 <Link key={stream.id} href={`/channel/${stream.userId}`} style={{ textDecoration: 'none' }}>
                   <Card title={stream.title}>
-                    {stream.thumbnailUrl && (
-                      <img 
-                        src={stream.thumbnailUrl} 
-                        alt={stream.title} 
-                        style={{ width: '100%', height: 'auto', objectFit: 'cover' }} 
-                      />
-                    )}
+                    <Image 
+                      src={stream.thumbnailUrl || 'https://placehold.co/320x180'} 
+                      alt={stream.title} 
+                      width={320}
+                      height={180}
+                      style={{ width: '100%', height: 'auto', objectFit: 'cover' }} 
+                    />
                     <p>{stream.description}</p>
                     {/* In a real app, you'd fetch the user's name from the userId */}
                     <p>Streamer ID: {stream.userId}</p>
