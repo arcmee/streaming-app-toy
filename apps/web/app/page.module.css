@@ -5,6 +5,11 @@
   width: 100%;
 }
 
+.cardLink {
+  text-decoration: none;
+  color: inherit;
+}
+
 /* Tablet and larger mobile */
 @media (max-width: 1199px) {
   .grid {

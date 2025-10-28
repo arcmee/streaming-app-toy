@@ -41,7 +41,7 @@ export default function Home() {
         <div className={styles.grid}>
           {streams.length > 0 ? (
             streams.map((stream) => (
-              <Link key={stream.id} href={`/channel/${stream.userId}`} style={{ textDecoration: 'none' }}>
+              <Link key={stream.id} href={`/channel/${stream.userId}`} className={styles.cardLink}>
                 <Card title={stream.title}>
                   <Image 
                     src={stream.thumbnailUrl || 'https://placehold.co/320x180'} 
