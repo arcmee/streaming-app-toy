@@ -46,6 +46,18 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const { user: currentUser, isAuthenticated } = useAuth();
 
+  // Dynamically load flv.js
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/flv.js@latest/dist/flv.min.js';
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
   // Fetch channel data
   useEffect(() => {
     if (!params.userId) return;
@@ -113,7 +125,7 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
     return <div style={styles.page}><p>Channel not found.</p></div>;
   }
 
-  const streamUrl = `http://localhost:8000/live/${channel.stream.id}.flv`;
+  const streamUrl = `${process.env.NEXT_PUBLIC_STREAMING_SERVER_URL}/live/${channel.stream.id}.flv`;
 
   return (
     <div style={styles.page}>
@@ -124,23 +136,20 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
 
       <div style={styles.layout}>
         <div style={styles.mainContent}>
-          {channel.stream.isLive ? (
-            <div style={styles.playerWrapper}>
-              <ReactPlayer
-                style={styles.reactPlayer}
-                url={streamUrl}
-                playing
-                controls
-                width="100%"
-                height="100%"
-              />
-            </div>
-          ) : (
-            <p>This stream is not live right now.</p>
-          )}
+          <div style={styles.playerWrapper}>
+            <ReactPlayer
+              style={styles.reactPlayer}
+              url={streamUrl}
+              playing={channel.stream.isLive}
+              controls
+              width="100%"
+              height="100%"
+            />
+          </div>
           <div style={styles.info}>
             <h3>About this stream:</h3>
             <p>{channel.stream.description}</p>
+            {!channel.stream.isLive && <p>This stream is not live right now.</p>}
           </div>
         </div>
 
