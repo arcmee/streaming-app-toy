@@ -26,6 +26,9 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
   const { user: currentUser, isAuthenticated, token } = useAuth();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const flvPlayerRef = useRef<import('flv.js').Player | null>(null);
+  const streamingBase = process.env.NEXT_PUBLIC_STREAMING_SERVER_URL;
+  const streamPathKey = channel?.stream.streamKey ?? channel?.stream.id;
+  const streamUrl = streamingBase && streamPathKey ? `${streamingBase}/live/${streamPathKey}.flv` : null;
 
   // Dynamically load flv.js
   useEffect(() => {
@@ -128,43 +131,11 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
     });
   };
 
-  if (loading) {
-    return (
-      <div style={styles.page}>
-        <p>Loading channel...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={styles.page}>
-        <p style={{ color: 'red' }}>{error}</p>
-      </div>
-    );
-  }
-
-  if (!channel) {
-    return <p>Channel not found.</p>;
-  }
-
-  const streamingBase = process.env.NEXT_PUBLIC_STREAMING_SERVER_URL;
-  if (!streamingBase) {
-    return (
-      <div style={styles.page}>
-        <p style={{ color: 'red' }}>
-          Streaming server URL is not set. Please set NEXT_PUBLIC_STREAMING_SERVER_URL.
-        </p>
-      </div>
-    );
-  }
-
-  const streamPathKey = channel.stream.streamKey ?? channel.stream.id;
-  const streamUrl = `${streamingBase}/live/${streamPathKey}.flv`;
-
   // Attach flv.js to video element
   useEffect(() => {
-    if (!videoRef.current || !window.flvjs || !window.flvjs.isSupported()) return;
+    if (!videoRef.current || !window.flvjs || !window.flvjs.isSupported() || !streamUrl || !channel) {
+      return;
+    }
     try {
       flvPlayerRef.current?.destroy();
       const flvPlayer = window.flvjs.createPlayer({
@@ -185,7 +156,37 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
       flvPlayerRef.current?.destroy();
       flvPlayerRef.current = null;
     };
-  }, [streamUrl, channel.stream.isLive]);
+  }, [streamUrl, channel?.stream.isLive]);
+
+  if (loading) {
+    return (
+      <div style={styles.page}>
+        <p>Loading channel...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={styles.page}>
+        <p style={{ color: 'red' }}>{error}</p>
+      </div>
+    );
+  }
+
+  if (!channel) {
+    return <p>Channel not found.</p>;
+  }
+
+  if (!streamingBase) {
+    return (
+      <div style={styles.page}>
+        <p style={{ color: 'red' }}>
+          Streaming server URL is not set. Please set NEXT_PUBLIC_STREAMING_SERVER_URL.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>
