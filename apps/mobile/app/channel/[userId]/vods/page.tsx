@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getVodsByUserId } from '@repo/logic/api/stream';
+import { getVodsByChannelId } from '@repo/logic/api/stream';
 import type { VOD } from '@repo/logic/domain/vod';
 
 // Basic styling
@@ -46,7 +46,7 @@ export default function VodsPage({ params }: { params: { userId: string } }) {
     const fetchVods = async () => {
       try {
         setLoading(true);
-        const fetchedVods = await getVodsByUserId(params.userId);
+        const fetchedVods = await getVodsByChannelId(params.userId);
         setVods(fetchedVods);
       } catch (err) {
         setError('Failed to fetch VODs.');

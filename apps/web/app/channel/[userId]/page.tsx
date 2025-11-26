@@ -16,6 +16,7 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [chatError, setChatError] = useState<string | null>(null);
   const { user: currentUser, isAuthenticated, token } = useAuth();
 
   // Dynamically load flv.js
@@ -52,12 +53,17 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
 
   // Manage chat connection
   useEffect(() => {
-    // Connect only when we have a channel and the user is authenticated with a token.
     if (!channel?.stream.id || !token) return;
+
+    const handleConnectionError = (msg: string) => {
+      setChatError(`Chat connection error: ${msg}`);
+    };
 
     try {
       chatService.connect(token);
       chatService.joinRoom(channel.stream.id);
+
+      chatService.onConnectionError(handleConnectionError);
 
       chatService.onNewMessage((message) => {
         setMessages((prevMessages) => [...prevMessages, message]);
@@ -73,14 +79,11 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
 
       chatService.onError((error) => {
         console.error('Chat Error:', error.message);
-        // Optionally show an error to the user in the chat UI
       });
     } catch (error) {
       console.error('Failed to connect to chat:', error);
-      // Handle connection error, maybe set an error state
     }
 
-    // Cleanup on component unmount
     return () => {
       try {
         chatService.leaveRoom(channel.stream.id);
@@ -88,14 +91,25 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
         chatService.offUserJoined();
         chatService.offUserLeft();
         chatService.offError();
+        chatService.offConnectionError(handleConnectionError);
         chatService.disconnect();
-        setMessages([]); // Clear messages on leave
+        setMessages([]);
       } catch (error) {
-        // Handle potential errors on disconnect if socket wasn't initialized
         console.error('Error during chat cleanup:', error);
       }
     };
   }, [channel, token]);
+
+  // Update socket auth when token changes while connected
+  useEffect(() => {
+    if (token) {
+      try {
+        chatService.updateToken(token);
+      } catch {
+        // socket not initialized; ignore
+      }
+    }
+  }, [token]);
 
   const handleSendMessage = (text: string) => {
     if (!currentUser || !channel) return;
@@ -107,18 +121,37 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
   };
 
   if (loading) {
-    return <div style={styles.page}><p>Loading channel...</p></div>;
+    return (
+      <div style={styles.page}>
+        <p>Loading channel...</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div style={styles.page}><p style={{ color: 'red' }}>{error}</p></div>;
+    return (
+      <div style={styles.page}>
+        <p style={{ color: 'red' }}>{error}</p>
+      </div>
+    );
   }
 
   if (!channel) {
     return <p>Channel not found.</p>;
   }
 
-  const streamUrl = `${process.env.NEXT_PUBLIC_STREAMING_SERVER_URL}/live/${channel.stream.id}.flv`;
+  const streamingBase = process.env.NEXT_PUBLIC_STREAMING_SERVER_URL;
+  if (!streamingBase) {
+    return (
+      <div style={styles.page}>
+        <p style={{ color: 'red' }}>
+          Streaming server URL is not set. Please set NEXT_PUBLIC_STREAMING_SERVER_URL.
+        </p>
+      </div>
+    );
+  }
+
+  const streamUrl = `${streamingBase}/live/${channel.stream.id}.flv`;
 
   return (
     <>
@@ -148,9 +181,10 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
         </div>
 
         <aside className={styles.chatAside}>
-          <Chat 
-            messages={messages} 
-            onSendMessage={handleSendMessage} 
+          {chatError && <p style={{ color: 'red' }}>{chatError}</p>}
+          <Chat
+            messages={messages}
+            onSendMessage={handleSendMessage}
             disabled={!isAuthenticated}
           />
         </aside>
