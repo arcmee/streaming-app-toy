@@ -24,6 +24,7 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatError, setChatError] = useState<string | null>(null);
   const { user: currentUser, isAuthenticated, token } = useAuth();
+  const [flvReady, setFlvReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const flvPlayerRef = useRef<import('flv.js').Player | null>(null);
   const streamingBase = process.env.NEXT_PUBLIC_STREAMING_SERVER_URL;
@@ -35,10 +36,12 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/flv.js@latest/dist/flv.min.js';
     script.async = true;
+    script.onload = () => setFlvReady(true);
     document.body.appendChild(script);
 
     return () => {
       document.body.removeChild(script);
+      setFlvReady(false);
     };
   }, []);
 
@@ -133,7 +136,7 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
 
   // Attach flv.js to video element
   useEffect(() => {
-    if (!videoRef.current || !window.flvjs || !window.flvjs.isSupported() || !streamUrl || !channel) {
+    if (!videoRef.current || !flvReady || !window.flvjs || !window.flvjs.isSupported() || !streamUrl || !channel) {
       return;
     }
     try {
@@ -156,7 +159,7 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
       flvPlayerRef.current?.destroy();
       flvPlayerRef.current = null;
     };
-  }, [streamUrl, channel?.stream.isLive]);
+  }, [streamUrl, channel?.stream.isLive, flvReady]);
 
   if (loading) {
     return (
