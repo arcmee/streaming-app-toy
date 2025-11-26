@@ -10,7 +10,21 @@ export default function MePage() {
   const [streamKey, setStreamKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [streamKeyCopied, setStreamKeyCopied] = useState(false);
+  const [serverCopied, setServerCopied] = useState(false);
+
+  const streamingBase = process.env.NEXT_PUBLIC_STREAMING_SERVER_URL;
+  const ingestUrl = streamingBase
+    ? (() => {
+        try {
+          const url = new URL(streamingBase);
+          const port = url.port || '1935';
+          return `rtmp://${url.hostname}:${port}/live`;
+        } catch {
+          return null;
+        }
+      })()
+    : null;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -35,12 +49,17 @@ export default function MePage() {
     fetchMyChannel();
   }, [isAuthenticated]);
 
-  const handleCopy = async () => {
-    if (!streamKey) return;
+  const handleCopy = async (text: string | null, kind: 'streamKey' | 'server') => {
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(streamKey);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      await navigator.clipboard.writeText(text);
+      if (kind === 'streamKey') {
+        setStreamKeyCopied(true);
+        setTimeout(() => setStreamKeyCopied(false), 1500);
+      } else {
+        setServerCopied(true);
+        setTimeout(() => setServerCopied(false), 1500);
+      }
     } catch (err) {
       console.error('Copy failed', err);
       setError('클립보드 복사에 실패했습니다. 수동으로 복사해주세요.');
@@ -87,7 +106,7 @@ export default function MePage() {
             >
               <div style={streamKeyBoxStyle}>{streamKey ?? '스트림 키 없음'}</div>
               <button
-                onClick={handleCopy}
+                onClick={() => handleCopy(streamKey, 'streamKey')}
                 disabled={!streamKey}
                 style={{
                   padding: '0.7rem 1.1rem',
@@ -99,13 +118,55 @@ export default function MePage() {
                   minWidth: 96,
                 }}
               >
-                {copied ? '복사됨' : '복사'}
+                {streamKeyCopied ? '복사됨' : '복사'}
               </button>
             </div>
             <p style={{ color: '#666', marginTop: '0.4rem' }}>
               RTMP 인코더 설정 시 다른 사람과 공유하지 마세요.
             </p>
           </>
+        )}
+      </section>
+
+      <section style={sectionStyle}>
+        <div style={sectionHeaderStyle}>OBS 설정용 서버 주소</div>
+        {streamingBase ? (
+          <>
+            <div style={{ display: 'grid', gap: '0.4rem' }}>
+              <div>
+                재생 서버 (NEXT_PUBLIC_STREAMING_SERVER_URL):{' '}
+                <span style={{ fontFamily: 'monospace' }}>{streamingBase}</span>
+              </div>
+              <div>
+                RTMP 인제스트 주소(추정):{' '}
+                <span style={{ fontFamily: 'monospace' }}>{ingestUrl ?? '파싱 불가'}</span>
+              </div>
+            </div>
+            <div style={{ marginTop: '0.6rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => handleCopy(ingestUrl, 'server')}
+                disabled={!ingestUrl}
+                style={{
+                  padding: '0.7rem 1.1rem',
+                  borderRadius: 8,
+                  border: '1px solid #0f6efc',
+                  background: ingestUrl ? '#0f6efc' : '#9bb8f7',
+                  color: '#fff',
+                  cursor: ingestUrl ? 'pointer' : 'not-allowed',
+                  minWidth: 120,
+                }}
+              >
+                {serverCopied ? '서버 복사됨' : 'RTMP 주소 복사'}
+              </button>
+            </div>
+            <p style={{ color: '#666', marginTop: '0.35rem' }}>
+              RTMP 포트가 다르거나 커스텀 경로를 쓰면 해당 값으로 교체해 주세요.
+            </p>
+          </>
+        ) : (
+          <p style={{ color: 'red' }}>
+            NEXT_PUBLIC_STREAMING_SERVER_URL이 설정되지 않았습니다. .env에 값을 추가하세요.
+          </p>
         )}
       </section>
     </div>
