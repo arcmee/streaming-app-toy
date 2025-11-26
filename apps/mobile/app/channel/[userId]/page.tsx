@@ -54,7 +54,7 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const flvPlayerRef = useRef<import('flv.js').Player | null>(null);
   const streamingBase = process.env.NEXT_PUBLIC_STREAMING_SERVER_URL;
-  const streamPathKey = channel?.stream.streamKey ?? channel?.stream.id;
+  const streamPathKey = channel?.stream.streamKey ?? channel?.stream.id ?? null;
   const streamUrl = streamingBase && streamPathKey ? `${streamingBase}/live/${streamPathKey}.flv` : null;
 
   // Dynamically load flv.js
