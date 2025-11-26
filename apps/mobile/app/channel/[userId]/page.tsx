@@ -162,20 +162,37 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
 
   // Attach flv.js to video element
   useEffect(() => {
-    if (!videoRef.current || !flvReady || !window.flvjs || !window.flvjs.isSupported() || !streamUrl || !channel) {
+    const flvLib = window.flvjs;
+    if (!videoRef.current || !flvReady || !flvLib || !flvLib.isSupported() || !streamUrl || !channel) {
       return;
     }
     try {
       flvPlayerRef.current?.destroy();
-      const flvPlayer = window.flvjs.createPlayer({
-        type: 'flv',
-        url: streamUrl,
-      });
+      const flvPlayer = flvLib.createPlayer(
+        {
+          type: 'flv',
+          url: streamUrl,
+          isLive: true,
+        },
+        {
+          enableStashBuffer: false,
+          stashInitialSize: 128,
+          autoCleanupSourceBuffer: true,
+        }
+      );
       flvPlayer.attachMediaElement(videoRef.current);
       flvPlayer.load();
       if (channel.stream.isLive) {
         flvPlayer.play();
       }
+      flvPlayer.on(flvLib.Events.ERROR, (errType, errDetail) => {
+        console.error('flv.js error', errType, errDetail);
+        flvPlayer.unload();
+        flvPlayer.load();
+        if (channel.stream.isLive) {
+          flvPlayer.play().catch((err) => console.error('flv.js retry play failed', err));
+        }
+      });
       flvPlayerRef.current = flvPlayer;
     } catch (err) {
       console.error('flv.js init error', err);
