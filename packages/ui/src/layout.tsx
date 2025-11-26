@@ -27,6 +27,7 @@ const layoutStyles = {
   nav: {
     display: 'flex',
     gap: '1rem',
+    alignItems: 'center',
   },
   navLink: {
     textDecoration: 'none',
@@ -56,9 +57,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </Link>
         <nav style={layoutStyles.nav}>
           {isAuthenticated ? (
-            <button onClick={logout} style={{...layoutStyles.navLink, border: 'none', background: 'none', cursor: 'pointer'}}>
-              Logout
-            </button>
+            <>
+              <Link href="/me" style={layoutStyles.navLink}>
+                My Info
+              </Link>
+              <button
+                onClick={logout}
+                style={{ ...layoutStyles.navLink, border: 'none', background: 'none', cursor: 'pointer' }}
+              >
+                Logout
+              </button>
+            </>
           ) : (
             <>
               <Link href="/login" style={layoutStyles.navLink}>
