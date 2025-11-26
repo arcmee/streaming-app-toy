@@ -2,6 +2,7 @@ import type { User } from './user';
 
 export interface Channel {
   user: User;
+  streamKey?: string; // some endpoints may return streamKey at the top-level
   stream: {
     id: string;
     title: string;
