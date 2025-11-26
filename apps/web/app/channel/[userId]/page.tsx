@@ -1,7 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { use, useEffect, useRef, useState } from 'react';
 import { getChannelByUserId } from '@repo/logic/api/stream';
 import { Channel } from '@repo/logic/domain/channel';
 import { chatService } from '@repo/logic/api/chat';
