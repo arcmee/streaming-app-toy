@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import ReactPlayer from 'react-player';
 import { getChannelByUserId } from '@repo/logic/api/stream';
 import { Channel } from '@repo/logic/domain/channel';
@@ -11,7 +11,8 @@ import { Chat } from '@repo/ui/chat';
 import Link from 'next/link';
 import styles from './page.module.css';
 
-export default function ChannelPage({ params }: { params: { userId: string } }) {
+export default function ChannelPage({ params }: { params: Promise<{ userId: string }> }) {
+  const { userId } = use(params);
   const [channel, setChannel] = useState<Channel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +34,12 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
 
   // Fetch channel data
   useEffect(() => {
-    if (!params.userId) return;
+    if (!userId) return;
 
     const fetchChannel = async () => {
       try {
         setLoading(true);
-        const fetchedChannel = await getChannelByUserId(params.userId);
+        const fetchedChannel = await getChannelByUserId(userId);
         setChannel(fetchedChannel);
       } catch (err) {
         setError('Failed to fetch channel data.');
@@ -49,7 +50,7 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
     };
 
     fetchChannel();
-  }, [params.userId]);
+  }, [userId]);
 
   // Manage chat connection
   useEffect(() => {
@@ -162,7 +163,7 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
         </Link>
         <h1>{channel.stream.title}</h1>
         <h2>Streamed by: {channel.user.username}</h2>
-        <Link href={`/channel/${params.userId}/vods`}>View VODs</Link>
+        <Link href={`/channel/${userId}/vods`}>View VODs</Link>
       </div>
 
       <div className={styles.layout}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getVodsByChannelId } from '@repo/logic/api/stream';
 import type { VOD } from '@repo/logic/domain/vod';
@@ -35,7 +35,8 @@ const styles = {
   },
 };
 
-export default function VodsPage({ params }: { params: { userId: string } }) {
+export default function VodsPage({ params }: { params: Promise<{ userId: string }> }) {
+  const { userId } = use(params);
   const [vods, setVods] = useState<VOD[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export default function VodsPage({ params }: { params: { userId: string } }) {
     const fetchVods = async () => {
       try {
         setLoading(true);
-        const fetchedVods = await getVodsByChannelId(params.userId);
+        const fetchedVods = await getVodsByChannelId(userId);
         setVods(fetchedVods);
       } catch (err) {
         setError('Failed to fetch VODs.');
@@ -57,7 +58,7 @@ export default function VodsPage({ params }: { params: { userId: string } }) {
     };
 
     fetchVods();
-  }, [params.userId]);
+  }, [userId]);
 
   if (loading) {
     return <div style={styles.page}><p>Loading VODs...</p></div>;
@@ -69,7 +70,7 @@ export default function VodsPage({ params }: { params: { userId: string } }) {
 
   return (
     <>
-      <h1 style={styles.title}>VODs for User {params.userId}</h1>
+      <h1 style={styles.title}>VODs for User {userId}</h1>
       {vods.length > 0 ? (
         <ul style={styles.vodList}>
           {vods.map((vod) => (
