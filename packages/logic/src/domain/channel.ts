@@ -7,6 +7,6 @@ export interface Channel {
     title: string;
     description: string;
     isLive: boolean;
-    streamKey?: string;
+    streamKey?: string; // may be included for public channel or my channel responses
   };
 }
