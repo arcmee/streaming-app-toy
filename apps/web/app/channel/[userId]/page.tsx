@@ -214,6 +214,9 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
               muted
             />
           </div>
+          <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.5rem' }}>
+            재생 URL: {streamUrl ?? 'N/A'}
+          </p>
           <div className={styles.info}>
             <h3>About this stream:</h3>
             <p>{channel.stream.description}</p>
