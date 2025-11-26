@@ -9,7 +9,9 @@
     "./code": "./src/code.tsx",
     "./input": "./src/input.tsx",
     "./label": "./src/label.tsx",
-    "./layout": "./src/layout.tsx"
+    "./layout": "./src/layout.tsx",
+    "./chat": "./src/chat.tsx",
+    ".": "./src/index.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0"

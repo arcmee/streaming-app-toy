@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import ReactPlayer from 'react-player';
+import React, { use, useEffect, useRef, useState } from 'react';
 import { getChannelByUserId } from '@repo/logic/api/stream';
 import { Channel } from '@repo/logic/domain/channel';
 import { chatService } from '@repo/logic/api/chat';
@@ -11,34 +10,49 @@ import { Chat } from '@repo/ui/chat';
 import Link from 'next/link';
 import styles from './page.module.css';
 
-export default function ChannelPage({ params }: { params: { userId: string } }) {
+declare global {
+  interface Window {
+    flvjs?: typeof import('flv.js');
+  }
+}
+
+export default function ChannelPage({ params }: { params: Promise<{ userId: string }> }) {
+  const { userId } = use(params);
   const [channel, setChannel] = useState<Channel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatError, setChatError] = useState<string | null>(null);
   const { user: currentUser, isAuthenticated, token } = useAuth();
+  const [flvReady, setFlvReady] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const flvPlayerRef = useRef<import('flv.js').Player | null>(null);
+  const streamingBase = process.env.NEXT_PUBLIC_STREAMING_SERVER_URL;
+  const streamPathKey = channel?.stream.streamKey ?? channel?.streamKey ?? channel?.stream.id ?? null;
+  const streamUrl = streamingBase && streamPathKey ? `${streamingBase}/live/${streamPathKey}.flv` : null;
 
   // Dynamically load flv.js
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/flv.js@latest/dist/flv.min.js';
     script.async = true;
+    script.onload = () => setFlvReady(true);
     document.body.appendChild(script);
 
     return () => {
       document.body.removeChild(script);
+      setFlvReady(false);
     };
   }, []);
 
   // Fetch channel data
   useEffect(() => {
-    if (!params.userId) return;
+    if (!userId) return;
 
     const fetchChannel = async () => {
       try {
         setLoading(true);
-        const fetchedChannel = await getChannelByUserId(params.userId);
+        const fetchedChannel = await getChannelByUserId(userId);
         setChannel(fetchedChannel);
       } catch (err) {
         setError('Failed to fetch channel data.');
@@ -49,7 +63,7 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
     };
 
     fetchChannel();
-  }, [params.userId]);
+  }, [userId]);
 
   // Manage chat connection
   useEffect(() => {
@@ -120,6 +134,51 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
     });
   };
 
+  // Attach flv.js to video element
+  useEffect(() => {
+    const flvLib = window.flvjs;
+    if (!videoRef.current || !flvReady || !flvLib || !flvLib.isSupported() || !streamUrl || !channel) {
+      return;
+    }
+    try {
+      flvPlayerRef.current?.destroy();
+      const flvPlayer = flvLib.createPlayer(
+        {
+          type: 'flv',
+          url: streamUrl,
+          isLive: true,
+        },
+        {
+          enableStashBuffer: false, // live 모드에서는 버퍼 최소화
+          stashInitialSize: 128,
+          autoCleanupSourceBuffer: true,
+        }
+      );
+      flvPlayer.attachMediaElement(videoRef.current);
+      flvPlayer.load();
+      if (channel.stream.isLive) {
+        flvPlayer.play();
+      }
+      flvPlayer.on(flvLib.Events.ERROR, (errType, errDetail) => {
+        console.error('flv.js error', errType, errDetail);
+        // 간단 재시도: 오류 시 새 플레이어로 교체
+        flvPlayer.unload();
+        flvPlayer.load();
+        if (channel.stream.isLive) {
+          flvPlayer.play().catch((err) => console.error('flv.js retry play failed', err));
+        }
+      });
+      flvPlayerRef.current = flvPlayer;
+    } catch (err) {
+      console.error('flv.js init error', err);
+    }
+
+    return () => {
+      flvPlayerRef.current?.destroy();
+      flvPlayerRef.current = null;
+    };
+  }, [streamUrl, channel?.stream.isLive, flvReady]);
+
   if (loading) {
     return (
       <div style={styles.page}>
@@ -140,7 +199,6 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
     return <p>Channel not found.</p>;
   }
 
-  const streamingBase = process.env.NEXT_PUBLIC_STREAMING_SERVER_URL;
   if (!streamingBase) {
     return (
       <div style={styles.page}>
@@ -151,28 +209,32 @@ export default function ChannelPage({ params }: { params: { userId: string } }) 
     );
   }
 
-  const streamUrl = `${streamingBase}/live/${channel.stream.id}.flv`;
-
   return (
     <>
-      <div style={{ marginBottom: '2rem' }}>
+      <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <Link href="/" style={{ color: '#0f6efc' }}>
+          ← Back to streams
+        </Link>
         <h1>{channel.stream.title}</h1>
         <h2>Streamed by: {channel.user.username}</h2>
-        <Link href={`/channel/${params.userId}/vods`}>View VODs</Link>
+        <Link href={`/channel/${userId}/vods`}>View VODs</Link>
       </div>
 
       <div className={styles.layout}>
         <div className={styles.mainContent}>
           <div className={styles.playerWrapper}>
-            <ReactPlayer
+            <video
+              ref={videoRef}
               className={styles.reactPlayer}
-              url={streamUrl}
-              playing={channel.stream.isLive}
+              style={{ width: '100%', height: '100%' }}
               controls
-              width="100%"
-              height="100%"
+              autoPlay={channel.stream.isLive}
+              muted
             />
           </div>
+          <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.5rem' }}>
+            재생 URL: {streamUrl ?? 'N/A'}
+          </p>
           <div className={styles.info}>
             <h3>About this stream:</h3>
             <p>{channel.stream.description}</p>
