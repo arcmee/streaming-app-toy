@@ -23,7 +23,7 @@ export default function MePage() {
         setLoading(true);
         const data = await getMyChannel();
         setChannel(data);
-        setStreamKey(data.stream.streamKey);
+        setStreamKey(data.stream.streamKey ?? data.streamKey ?? null);
       } catch (err) {
         console.error(err);
         setError('스트림 키를 불러오지 못했습니다. 다시 시도해주세요.');
@@ -85,9 +85,7 @@ export default function MePage() {
                 flexWrap: 'wrap',
               }}
             >
-              <div style={streamKeyBoxStyle}>
-                {streamKey ?? '스트림 키 없음'}
-              </div>
+              <div style={streamKeyBoxStyle}>{streamKey ?? '스트림 키 없음'}</div>
               <button
                 onClick={handleCopy}
                 disabled={!streamKey}

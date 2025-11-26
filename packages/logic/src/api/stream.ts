@@ -6,7 +6,8 @@ import type { VOD } from '../domain/vod';
 const API_PREFIX = '/api';
 
 export type MyChannel = Channel & {
-  stream: Channel['stream'] & { streamKey: string };
+  stream: Channel['stream'] & { streamKey?: string };
+  streamKey?: string; // fallback if API returns at top-level
 };
 
 export const getStreams = async (): Promise<Stream[]> => {
