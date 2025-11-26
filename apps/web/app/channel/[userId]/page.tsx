@@ -1,7 +1,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import ReactPlayer from 'react-player';
+import React, { useEffect, useState, useRef } from 'react';
 import { getChannelByUserId } from '@repo/logic/api/stream';
 import { Channel } from '@repo/logic/domain/channel';
 import { chatService } from '@repo/logic/api/chat';
@@ -11,6 +11,12 @@ import { Chat } from '@repo/ui/chat';
 import Link from 'next/link';
 import styles from './page.module.css';
 
+declare global {
+  interface Window {
+    flvjs?: typeof import('flv.js');
+  }
+}
+
 export default function ChannelPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
   const [channel, setChannel] = useState<Channel | null>(null);
@@ -19,6 +25,8 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatError, setChatError] = useState<string | null>(null);
   const { user: currentUser, isAuthenticated, token } = useAuth();
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const flvPlayerRef = useRef<import('flv.js').Player | null>(null);
 
   // Dynamically load flv.js
   useEffect(() => {
@@ -155,6 +163,31 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
   const streamPathKey = channel.stream.streamKey ?? channel.stream.id;
   const streamUrl = `${streamingBase}/live/${streamPathKey}.flv`;
 
+  // Attach flv.js to video element
+  useEffect(() => {
+    if (!videoRef.current || !window.flvjs || !window.flvjs.isSupported()) return;
+    try {
+      flvPlayerRef.current?.destroy();
+      const flvPlayer = window.flvjs.createPlayer({
+        type: 'flv',
+        url: streamUrl,
+      });
+      flvPlayer.attachMediaElement(videoRef.current);
+      flvPlayer.load();
+      if (channel.stream.isLive) {
+        flvPlayer.play();
+      }
+      flvPlayerRef.current = flvPlayer;
+    } catch (err) {
+      console.error('flv.js init error', err);
+    }
+
+    return () => {
+      flvPlayerRef.current?.destroy();
+      flvPlayerRef.current = null;
+    };
+  }, [streamUrl, channel.stream.isLive]);
+
   return (
     <>
       <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -169,13 +202,13 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
       <div className={styles.layout}>
         <div className={styles.mainContent}>
           <div className={styles.playerWrapper}>
-            <ReactPlayer
+            <video
+              ref={videoRef}
               className={styles.reactPlayer}
-              url={streamUrl} // HTTP-FLV
-              playing={channel.stream.isLive}
+              style={{ width: '100%', height: '100%' }}
               controls
-              width="100%"
-              height="100%"
+              autoPlay={channel.stream.isLive}
+              muted
             />
           </div>
           <div className={styles.info}>
