@@ -153,7 +153,7 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
   }
 
   const streamPathKey = channel.stream.streamKey ?? channel.stream.id;
-  const streamUrl = `${streamingBase}/live/${streamPathKey}/index.m3u8`;
+  const streamUrl = `${streamingBase}/live/${streamPathKey}.flv`;
 
   return (
     <>
@@ -171,10 +171,9 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
           <div className={styles.playerWrapper}>
             <ReactPlayer
               className={styles.reactPlayer}
-              url={streamUrl} // HLS(m3u8); ReactPlayer uses hls.js internally for non-Safari
+              url={streamUrl} // HTTP-FLV
               playing={channel.stream.isLive}
               controls
-              config={{ file: { forceHLS: true } }}
               width="100%"
               height="100%"
             />
