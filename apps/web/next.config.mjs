@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
-module.exports = {
-  transpilePackages: ["@repo/ui"],
+const nextConfig = {
+  transpilePackages: ['@repo/ui', '@repo/logic'],
   images: {
     remotePatterns: [
       {
