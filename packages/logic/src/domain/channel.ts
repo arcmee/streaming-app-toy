@@ -7,5 +7,6 @@ export interface Channel {
     title: string;
     description: string;
     isLive: boolean;
+    streamKey?: string;
   };
 }

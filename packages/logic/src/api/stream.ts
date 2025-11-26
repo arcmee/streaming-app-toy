@@ -5,6 +5,10 @@ import type { VOD } from '../domain/vod';
 
 const API_PREFIX = '/api';
 
+export type MyChannel = Channel & {
+  stream: Channel['stream'] & { streamKey: string };
+};
+
 export const getStreams = async (): Promise<Stream[]> => {
   const response = await apiClient.get(`${API_PREFIX}/streams`);
   return response.data;
@@ -22,6 +26,11 @@ export const getVodsByChannelId = async (channelId: string): Promise<VOD[]> => {
 
 export const getVodById = async (vodId: string): Promise<VOD> => {
   const response = await apiClient.get(`${API_PREFIX}/vods/${vodId}`);
+  return response.data;
+};
+
+export const getMyChannel = async (): Promise<MyChannel> => {
+  const response = await apiClient.get(`${API_PREFIX}/users/me/channel`);
   return response.data;
 };
 
