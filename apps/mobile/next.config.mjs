@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
-module.exports = {
-  transpilePackages: ["@repo/ui"],
+const nextConfig = {
+  transpilePackages: ['@repo/ui', '@repo/logic'],
   images: {
     remotePatterns: [
       {
@@ -10,3 +10,5 @@ module.exports = {
     ],
   },
 };
+
+export default nextConfig;

@@ -2,8 +2,10 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiClient } from '../api-client';
-import { logoutUser as performLogout } from '../api/auth';
+import { logoutUser as performLogout, refreshToken as performRefresh } from '../api/auth';
 import { jwtDecode } from 'jwt-decode';
+import { tokenStorage } from '../auth/token-storage';
+import { chatService } from '../api/chat';
 
 interface User {
   id: string;
@@ -26,6 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     // Ensure this runs only on the client
@@ -34,14 +37,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
     }
     
-    const storedToken = localStorage.getItem('authToken');
+    const storedToken = tokenStorage.get();
     if (storedToken) {
       try {
         const decodedToken: { sub: string; username: string; email: string; exp: number } = jwtDecode(storedToken);
         
         // Check if token is expired
         if (decodedToken.exp * 1000 < Date.now()) {
-            localStorage.removeItem('authToken');
+            tokenStorage.clear();
             setUser(null);
             setToken(null);
         } else {
@@ -51,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (error) {
         console.error('Invalid token:', error);
-        localStorage.removeItem('authToken');
+        tokenStorage.clear();
         setUser(null);
         setToken(null);
       }
@@ -60,12 +63,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (newToken: string) => {
-    localStorage.setItem('authToken', newToken);
+    tokenStorage.set(newToken);
     try {
       const decodedToken: { sub: string; username: string; email: string } = jwtDecode(newToken);
       setUser({ id: decodedToken.sub, username: decodedToken.username, email: decodedToken.email });
       setToken(newToken);
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+      chatService.updateToken(newToken);
     } catch (error) {
         console.error('Invalid token on login:', error);
         setUser(null);
@@ -74,10 +78,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    performLogout(); // This removes the token from localStorage
+    performLogout(); // This removes the token from storage
     delete apiClient.defaults.headers.common['Authorization'];
     setUser(null);
     setToken(null);
+  };
+
+  const refresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      const { token: newToken } = await performRefresh();
+      if (newToken) {
+        const decodedToken: { sub: string; username: string; email: string } = jwtDecode(newToken);
+        setUser({ id: decodedToken.sub, username: decodedToken.username, email: decodedToken.email });
+        setToken(newToken);
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+        chatService.updateToken(newToken);
+      }
+    } catch (error) {
+      console.error('Failed to refresh token:', error);
+      logout();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const isAuthenticated = !!user;
