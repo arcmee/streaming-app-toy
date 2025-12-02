@@ -1,5 +1,3 @@
-/* eslint-disable no-bitwise */
-
 /**
  * Generates a consistent, visually appealing color from a string (e.g., a user ID).
  * This hashing function is simple and not cryptographically secure.

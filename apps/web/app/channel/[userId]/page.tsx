@@ -9,12 +9,7 @@ import type { ChatMessage } from '@repo/logic/domain/chat';
 import { Chat } from '@repo/ui/chat';
 import Link from 'next/link';
 import styles from './page.module.css';
-
-declare global {
-  interface Window {
-    flvjs?: typeof import('flv.js');
-  }
-}
+import type Hls from 'hls.js';
 
 export default function ChannelPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
@@ -24,26 +19,11 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatError, setChatError] = useState<string | null>(null);
   const { user: currentUser, isAuthenticated, token } = useAuth();
-  const [flvReady, setFlvReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const flvPlayerRef = useRef<import('flv.js').Player | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const streamingBase = process.env.NEXT_PUBLIC_STREAMING_SERVER_URL;
   const streamPathKey = channel?.stream.streamKey ?? channel?.streamKey ?? channel?.stream.id ?? null;
-  const streamUrl = streamingBase && streamPathKey ? `${streamingBase}/live/${streamPathKey}.flv` : null;
-
-  // Dynamically load flv.js
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/flv.js@latest/dist/flv.min.js';
-    script.async = true;
-    script.onload = () => setFlvReady(true);
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-      setFlvReady(false);
-    };
-  }, []);
+  const streamUrl = streamingBase && streamPathKey ? `${streamingBase}/live/${streamPathKey}.m3u8` : null;
 
   // Fetch channel data
   useEffect(() => {
@@ -91,11 +71,11 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
         setMessages((prevMessages) => [...prevMessages, message]);
       });
 
-      chatService.onError((error) => {
-        console.error('Chat Error:', error.message);
+      chatService.onError((chatErr) => {
+        console.error('Chat Error:', chatErr.message);
       });
-    } catch (error) {
-      console.error('Failed to connect to chat:', error);
+    } catch (chatErr) {
+      console.error('Failed to connect to chat:', chatErr);
     }
 
     return () => {
@@ -108,8 +88,8 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
         chatService.offConnectionError(handleConnectionError);
         chatService.disconnect();
         setMessages([]);
-      } catch (error) {
-        console.error('Error during chat cleanup:', error);
+      } catch (cleanupErr) {
+        console.error('Error during chat cleanup:', cleanupErr);
       }
     };
   }, [channel, token]);
@@ -134,50 +114,80 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
     });
   };
 
-  // Attach flv.js to video element
+  // Attach hls.js to video element
   useEffect(() => {
-    const flvLib = window.flvjs;
-    if (!videoRef.current || !flvReady || !flvLib || !flvLib.isSupported() || !streamUrl || !channel) {
-      return;
-    }
-    try {
-      flvPlayerRef.current?.destroy();
-      const flvPlayer = flvLib.createPlayer(
-        {
-          type: 'flv',
-          url: streamUrl,
-          isLive: true,
-        },
-        {
-          enableStashBuffer: false, // live 모드에서는 버퍼 최소화
-          stashInitialSize: 128,
-          autoCleanupSourceBuffer: true,
-        }
-      );
-      flvPlayer.attachMediaElement(videoRef.current);
-      flvPlayer.load();
+    const videoElement = videoRef.current;
+    if (!videoElement || !streamUrl || !channel) return;
+
+    const canPlayNatively = videoElement.canPlayType('application/vnd.apple.mpegurl');
+    let cancelled = false;
+
+    const cleanupNative = () => {
+      videoElement.removeAttribute('src');
+      videoElement.load();
+    };
+
+    const startNativePlayback = () => {
+      videoElement.src = streamUrl;
       if (channel.stream.isLive) {
-        flvPlayer.play();
+        videoElement.play().catch((err) => console.error('HLS native play failed', err));
       }
-      flvPlayer.on(flvLib.Events.ERROR, (errType, errDetail) => {
-        console.error('flv.js error', errType, errDetail);
-        // 간단 재시도: 오류 시 새 플레이어로 교체
-        flvPlayer.unload();
-        flvPlayer.load();
-        if (channel.stream.isLive) {
-          flvPlayer.play().catch((err) => console.error('flv.js retry play failed', err));
-        }
-      });
-      flvPlayerRef.current = flvPlayer;
-    } catch (err) {
-      console.error('flv.js init error', err);
+    };
+
+    if (canPlayNatively) {
+      startNativePlayback();
+      return () => cleanupNative();
     }
 
+    (async () => {
+      const Hls = (await import('hls.js')).default;
+      if (cancelled) return;
+      if (!Hls.isSupported()) {
+        console.error('HLS not supported in this browser');
+        return;
+      }
+
+      hlsRef.current?.destroy();
+      const hls = new Hls({
+        enableWorker: true,
+        backBufferLength: 90,
+        startLevel: -1,
+        liveSyncDurationCount: 3,
+        lowLatencyMode: true,
+      });
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        console.error('hls.js error', data);
+        if (!data.fatal) return;
+        switch (data.type) {
+          case Hls.ErrorTypes.NETWORK_ERROR:
+            hls.startLoad();
+            break;
+          case Hls.ErrorTypes.MEDIA_ERROR:
+            hls.recoverMediaError();
+            break;
+          default:
+            hls.destroy();
+        }
+      });
+
+      hls.loadSource(streamUrl);
+      hls.attachMedia(videoElement);
+      if (channel.stream.isLive) {
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          videoElement.play().catch((err) => console.error('hls.js play failed', err));
+        });
+      }
+
+      hlsRef.current = hls;
+    })();
+
     return () => {
-      flvPlayerRef.current?.destroy();
-      flvPlayerRef.current = null;
+      cancelled = true;
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
     };
-  }, [streamUrl, channel?.stream.isLive, flvReady]);
+  }, [streamUrl, channel?.stream.isLive]);
 
   if (loading) {
     return (
@@ -213,7 +223,7 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
     <>
       <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         <Link href="/" style={{ color: '#0f6efc' }}>
-          ← Back to streams
+          Back to streams
         </Link>
         <h1>{channel.stream.title}</h1>
         <h2>Streamed by: {channel.user.username}</h2>
@@ -233,7 +243,7 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
             />
           </div>
           <p style={{ fontSize: '0.85rem', color: '#666', marginTop: '0.5rem' }}>
-            재생 URL: {streamUrl ?? 'N/A'}
+            Playback URL: {streamUrl ?? 'N/A'}
           </p>
           <div className={styles.info}>
             <h3>About this stream:</h3>
@@ -244,11 +254,7 @@ export default function ChannelPage({ params }: { params: Promise<{ userId: stri
 
         <aside className={styles.chatAside}>
           {chatError && <p style={{ color: 'red' }}>{chatError}</p>}
-          <Chat
-            messages={messages}
-            onSendMessage={handleSendMessage}
-            disabled={!isAuthenticated}
-          />
+          <Chat messages={messages} onSendMessage={handleSendMessage} disabled={!isAuthenticated} />
         </aside>
       </div>
     </>
