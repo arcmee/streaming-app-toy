@@ -61,3 +61,5 @@
 1.  테스트 프레임워크(Jest, React Testing Library) 설정.
 2.  `application` 계층의 핵심 유스케이스에 대한 유닛 테스트 작성.
 3.  주요 UI 컴포넌트 및 페이지에 대한 통합 테스트 작성.
+
+codex resume 019ada2d-4000-7ea1-8ce4-8ded181681fe
