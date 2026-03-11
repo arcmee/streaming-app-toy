@@ -1,5 +1,7 @@
 # Turborepo starter
 
+[한국어 README](./README.ko.md)
+
 This Turborepo starter is maintained by the Turborepo core team.
 
 ## Using this example
